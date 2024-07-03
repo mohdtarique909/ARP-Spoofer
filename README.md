@@ -12,7 +12,7 @@ This project is an ARP spoofing tool that can be used to intercept network traff
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/yourusername/arp-spoofer.git
+    git clone https://github.com/mohdtarique909/ARP-Spoofer.git
     cd arp-spoofer
     ```
 
@@ -24,22 +24,29 @@ This project is an ARP spoofing tool that can be used to intercept network traff
 
 ## Usage
 
-1. Run the ARP Spoofer script:
+
+1. Enable IP forwarding to allow your machine to forward packets:
+
+    ```bash
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+    ```
+
+2. Run the ARP Spoofer script:
 
     ```bash
     python arp_spoofer.py
     ```
 
-2. Enter the target IP and the gateway/router IP when prompted.
+3. Enter the target IP and the gateway/router IP when prompted.
 
     ```plaintext
     Enter the Target IP: 192.168.1.10
     Enter the Gateway/Router IP: 192.168.1.1
     ```
 
-3. The tool will start sending spoofed ARP packets, redirecting the target's traffic through your machine.
+4. The tool will start sending spoofed ARP packets, redirecting the target's traffic through your machine.
 
-4. To stop the tool, press `CTRL + C`. The ARP tables will be restored to their original state.
+5. To stop the tool, press `CTRL + C`. The ARP tables will be restored to their original state.
 
 
 ## Disclaimer
