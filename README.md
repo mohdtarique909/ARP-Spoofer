@@ -40,8 +40,8 @@ This project is an ARP spoofing tool that can be used to intercept network traff
 3. Enter the target IP and the gateway/router IP when prompted.
 
     ```plaintext
-    Enter the Target IP: 192.168.1.10
-    Enter the Gateway/Router IP: 192.168.1.1
+    Enter the Target IP: 
+    Enter the Gateway/Router IP: 
     ```
 
 4. The tool will start sending spoofed ARP packets, redirecting the target's traffic through your machine.
