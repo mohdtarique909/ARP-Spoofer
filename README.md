@@ -40,3 +40,8 @@ This project is an ARP spoofing tool that can be used to intercept network traff
 3. The tool will start sending spoofed ARP packets, redirecting the target's traffic through your machine.
 
 4. To stop the tool, press `CTRL + C`. The ARP tables will be restored to their original state.
+
+
+## Disclaimer
+
+This tool is for educational purposes only. Use it at your own risk. The author is not responsible for any misuse or damage caused by this tool.
