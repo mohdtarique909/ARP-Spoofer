@@ -23,7 +23,7 @@ mitigate the attack — the mindset that matters in security work.
 | `scan` | Discover live hosts on a subnet with their IP and MAC address (ARP sweep). |
 | `spoof` | MITM a victim and the gateway via ARP cache poisoning, auto-managing IP forwarding and cleaning up on exit. |
 | `sniff` | Capture plaintext HTTP requests (URLs and possible credentials) flowing through you while you're the MITM. |
-| `detect` | Sniff ARP traffic and alert when one IP suddenly maps to a new MAC — the signature of poisoning. |
+| `detect` | Alert when one IP suddenly maps to a new MAC — the signature of poisoning. Watches the wire by default, or the OS ARP cache with `--watch-cache`. |
 | `restore` | Manually rebuild two hosts' ARP tables (the attack also does this automatically on `Ctrl+C`). |
 
 ### The full attack chain
@@ -126,6 +126,26 @@ sudo python -m arpspoofer detect -i eth0
 13:42:07 [WARNING] POSSIBLE ARP SPOOFING: 192.168.1.1 changed from a4:2b:b0:11:22:33 to de:ad:be:ef:00:01
 ```
 
+`detect` has two modes:
+
+- **Sniff mode (default):** passively captures ARP replies off the wire and
+  alerts on a changed binding.
+- **Cache-watch mode (`--watch-cache`):** polls the operating system's own ARP
+  table (`arp -a` / `ip neigh`) instead of capturing packets:
+
+  ```bash
+  python -m arpspoofer detect --watch-cache -v          # poll every 2s
+  python -m arpspoofer detect --watch-cache --interval 1
+  ```
+
+  Use this on **Wi-Fi and Windows**, where the packet sniffer can miss the
+  attack: the incoming unicast poison frame often isn't surfaced by Npcap even
+  though the OS still updates its ARP cache. Cache-watch mode reads that cache
+  directly, so it catches the change the sniffer doesn't see. Two caveats: it
+  trusts the *first* binding it observes as legitimate (so start it on a clean
+  cache), and it only checks every `--interval` seconds, so a brief
+  poison-then-restore can slip between polls.
+
 **Restore manually if needed:**
 ```bash
 sudo python -m arpspoofer restore -t 192.168.1.5 -g 192.168.1.1
@@ -159,7 +179,7 @@ arpspoofer/
 ├── cli.py       # argparse CLI and command dispatch
 ├── spoof.py     # ARP poisoning attack + table restoration
 ├── sniff.py     # HTTP traffic sniffer + credential detection
-├── detect.py    # real-time spoofing detector (ArpWatcher)
+├── detect.py    # real-time spoofing detector (wire sniff + ARP-cache watch)
 ├── scan.py      # network host discovery
 └── utils.py     # logging, IP validation, MAC resolution, IP forwarding
 tests/           # pytest suite (scapy mocked — no packets sent)

@@ -47,3 +47,49 @@ class TestDetector:
         request = scapy.Ether() / scapy.ARP(op=1, psrc="192.168.1.1", hwsrc="aa:aa:aa:aa:aa:aa")
         w.process(request)
         assert w.table == {}
+
+    def test_treats_dashed_uppercase_mac_as_same_binding(self):
+        # Windows `arp -a` prints 40-C7-3C..., the wire gives 40:c7:3c... - the
+        # detector must not mistake the same MAC in two notations for a change.
+        w = detect.ArpWatcher()
+        w.update("192.168.1.1", "40-C7-3C-14-61-AD")
+        w.update("192.168.1.1", "40:c7:3c:14:61:ad")
+        assert w.alerts == 0
+
+
+class TestArpCacheReader:
+    WINDOWS_OUT = (
+        "Interface: 10.207.187.101 --- 0x8\n"
+        "  Internet Address      Physical Address      Type\n"
+        "  10.207.187.109        b2-9d-c6-1f-7d-5a     dynamic\n"
+        "  10.207.187.255        ff-ff-ff-ff-ff-ff     static\n"
+        "  224.0.0.22            01-00-5e-00-00-16     static\n"
+    )
+    LINUX_OUT = "10.207.187.109 dev wlan0 lladdr b2:9d:c6:1f:7d:5a REACHABLE\n"
+
+    def _patch_run(self, stdout):
+        result = mock.Mock(stdout=stdout)
+        return mock.patch.object(detect.subprocess, "run", return_value=result)
+
+    def test_parses_windows_output_and_skips_bcast_mcast(self):
+        with self._patch_run(self.WINDOWS_OUT):
+            cache = detect.read_arp_cache()
+        assert cache == {"10.207.187.109": "b2:9d:c6:1f:7d:5a"}
+
+    def test_parses_linux_ip_neigh_output(self):
+        with self._patch_run(self.LINUX_OUT):
+            cache = detect.read_arp_cache()
+        assert cache == {"10.207.187.109": "b2:9d:c6:1f:7d:5a"}
+
+    def test_watch_cache_alerts_when_binding_changes(self, caplog):
+        # First poll learns the real MAC; second poll sees the poisoned one.
+        polls = [
+            {"10.207.187.109": "b2:9d:c6:1f:7d:5a"},
+            {"10.207.187.109": "08:00:27:10:51:1d"},
+        ]
+        with mock.patch.object(detect, "read_arp_cache", side_effect=polls), \
+                mock.patch.object(detect.time, "sleep"), \
+                caplog.at_level("WARNING", logger="arpspoofer"):
+            rc = detect.run(watch_cache=True, count=2, interval=0)
+        assert rc == 0
+        assert "POSSIBLE ARP SPOOFING" in caplog.text

@@ -62,7 +62,18 @@ def build_parser():
     )
 
     p_detect = sub.add_parser("detect", parents=[common], help="detect ARP spoofing on the network")
-    p_detect.add_argument("--count", type=int, default=0, help="stop after N packets (0 = forever)")
+    p_detect.add_argument(
+        "--count", type=int, default=0,
+        help="stop after N packets, or N polls with --watch-cache (0 = forever)",
+    )
+    p_detect.add_argument(
+        "--watch-cache", action="store_true",
+        help="poll the OS ARP cache instead of sniffing (more reliable on Wi-Fi/Windows)",
+    )
+    p_detect.add_argument(
+        "--interval", type=float, default=2,
+        help="seconds between cache polls (only with --watch-cache, default 2)",
+    )
 
     p_scan = sub.add_parser("scan", parents=[common], help="discover live hosts (IP + MAC)")
     p_scan.add_argument("network", type=_network_arg, help="CIDR to scan, e.g. 192.168.1.0/24")
@@ -93,7 +104,12 @@ def main(argv=None):
             forward=not args.no_forward,
         )
     if args.command == "detect":
-        return detect.run(iface=args.iface, count=args.count)
+        return detect.run(
+            iface=args.iface,
+            count=args.count,
+            watch_cache=args.watch_cache,
+            interval=args.interval,
+        )
     if args.command == "scan":
         return scan.run(args.network, iface=args.iface, timeout=args.timeout)
     if args.command == "sniff":
