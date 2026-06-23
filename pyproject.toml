@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arpspoofer"
+version = "1.0.0"
+description = "Educational ARP toolkit: MITM spoofing, real-time detection, and network discovery."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "Mohd Tarique", email = "mohdtarique909@gmail.com" }]
+keywords = ["arp", "spoofing", "mitm", "network-security", "scapy", "pentest"]
+dependencies = ["scapy>=2.5.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+arpspoofer = "arpspoofer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/mohdtarique909/ARP-Spoofer"
+
+[tool.setuptools.packages.find]
+include = ["arpspoofer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
