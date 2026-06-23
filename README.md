@@ -22,8 +22,21 @@ mitigate the attack — the mindset that matters in security work.
 |------|-------------|
 | `scan` | Discover live hosts on a subnet with their IP and MAC address (ARP sweep). |
 | `spoof` | MITM a victim and the gateway via ARP cache poisoning, auto-managing IP forwarding and cleaning up on exit. |
+| `sniff` | Capture plaintext HTTP requests (URLs and possible credentials) flowing through you while you're the MITM. |
 | `detect` | Sniff ARP traffic and alert when one IP suddenly maps to a new MAC — the signature of poisoning. |
 | `restore` | Manually rebuild two hosts' ARP tables (the attack also does this automatically on `Ctrl+C`). |
+
+### The full attack chain
+
+These modes compose into a realistic workflow — and its defense:
+
+```
+1. scan    →  find the victim and the gateway on the network
+2. spoof   →  become the man in the middle (traffic now flows through you)
+3. sniff   →  read the victim's plaintext HTTP traffic
+   (HTTPS stays encrypted — that's the takeaway)
+4. detect  →  the blue-team view: how a defender spots steps 2-3 in real time
+```
 
 ---
 
@@ -94,6 +107,17 @@ sudo python -m arpspoofer spoof -t 192.168.1.5 -g 192.168.1.1 -i eth0
 ```
 Press `Ctrl+C` to stop — the tool restores both ARP tables automatically.
 
+**Sniff plaintext HTTP traffic** (while spoofing, in a second terminal):
+```bash
+sudo python -m arpspoofer sniff -i eth0
+```
+```
+13:45:12 [INFO] HTTP POST http://example.com/login
+13:45:12 [WARNING] Possible plaintext credentials >> username=admin&password=hunter2
+```
+Only unencrypted HTTP is readable — HTTPS traffic stays encrypted, which is the
+point of the demonstration.
+
 **Detect ARP spoofing on the network** (run on a victim/monitor machine):
 ```bash
 sudo python -m arpspoofer detect -i eth0
@@ -134,6 +158,7 @@ The defensive half of this project. To protect a real network:
 arpspoofer/
 ├── cli.py       # argparse CLI and command dispatch
 ├── spoof.py     # ARP poisoning attack + table restoration
+├── sniff.py     # HTTP traffic sniffer + credential detection
 ├── detect.py    # real-time spoofing detector (ArpWatcher)
 ├── scan.py      # network host discovery
 └── utils.py     # logging, IP validation, MAC resolution, IP forwarding
